@@ -2,7 +2,7 @@ import sys
 import os
 
 if len(sys.argv) < 3:
-    print("Usage: py3 client.py HOST PORT")
+    print("Usage: python3 client-win.py HOST PORT")
     exit()
 
 host = sys.argv[1]

@@ -2,7 +2,7 @@ import sys
 import os
 
 if len(sys.argv) < 5:
-    print("Usage: py3 client.py HOST PORT MOUSE_PATH KEYBOARD_PATH")
+    print("Usage: python3 client.py HOST PORT MOUSE_PATH KEYBOARD_PATH")
     exit()
 
 host = sys.argv[1]
