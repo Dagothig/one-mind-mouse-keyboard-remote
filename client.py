@@ -1,22 +1,47 @@
+import sys
+import os
+
+if len(sys.argv) < 5:
+    print("Usage: py3 client.py HOST PORT MOUSE_PATH KEYBOARD_PATH")
+    exit()
+
+host = sys.argv[1]
+port = int(sys.argv[2])
+mouse_path = sys.argv[3]
+keyboard_path = sys.argv[4]
+user = os.urandom(4)
+
 from pythonosc.udp_client import SimpleUDPClient
-import keyboard
-import mouse
+import io
+import struct
+from threading import Thread
 
-mouse_path = "/dev/input/mouse0"
-keyboard_path = "/dev/input/event2"
+client = SimpleUDPClient(host, port)
 
-client = SimpleUDPClient("192.168.1.224", 8000)
+client.send_message('/connect', (user))
 
-keyboard.on_press(lambda ev: client.send_message('/keyboard/press', ev.name))
-keyboard.on_release(lambda ev: client.send_message('/keyboard/release', ev.name))
+codes = {
+    105: 'left',
+    106: 'right',
+    103: 'up',
+    108: 'down'
+}
 
-def onMouse(ev):
-    if type(ev) == mouse.MoveEvent:
-        client.send_message('/mouse/move', (ev.x, ev.y))
-    elif type(ev) == mouse.ButtonEvent:
-        client.send_message('/mouse/button', (ev.event_type, ev.button))
-    elif type(ev) == mouse.WheelEvent:
-        client.send_message('/mouse/wheel', ev.delta)
-mouse.hook(onMouse)
+def handle_keyboard():
+    with io.open(keyboard_path, mode="rb", buffering=24) as keyboard_f:
+        while True:
+            _, c, v = struct.unpack("x" * 16 + "HHI", keyboard_f.read(24))
+            c = codes.get(c, c)
+            client.send_message("/keyboard", (user, c, v))
 
-keyboard.wait()
+def handle_mouse():
+    with io.open(mouse_path, mode="rb", buffering=3) as mouse_f:
+        while True:
+            v, x, y = struct.unpack("bbb", mouse_f.read(3))
+            client.send_message("/mouse", (user, v, x, -y))
+
+keyboard_thread = Thread(target = handle_keyboard)
+keyboard_thread.start()
+
+mouse_thread = Thread(target = handle_mouse)
+mouse_thread.start()
