@@ -26,22 +26,23 @@ def handle_keyboard_event(address, user, c, v):
         keyboard.press(c)
     elif v == 0:
         keyboard.release(c)
-    #elif v == 2:
-    #    keyboard.send(c)
 
 def handle_mouse_event(address, user, v, x, y):
     handle_connect(address, user)
     left = v & 1
-    if left and not mouse.is_pressed('left'):
+    left_pressed = mouse.is_pressed('left')
+    if left and not left_pressed:
         mouse.press('left')
-    if not left and mouse.is_pressed('left'):
+    if not left and left_pressed:
         mouse.release('left')
-    
+
     right = (v >> 1) & 1
-    if right and not mouse.is_pressed('right'):
+    right_pressed = mouse.is_pressed('right')
+    if right and not right_pressed:
         mouse.press('right')
-    if not right and mouse.is_pressed('right'):
+    if not right and right_pressed:
         mouse.release('right')
+
     mouse.move(x, y, False)
 
 dispatcher = Dispatcher()
