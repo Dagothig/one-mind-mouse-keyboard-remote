@@ -17,8 +17,9 @@ client = SimpleUDPClient(host, port)
 
 client.send_message('/connect', (user))
 
-keyboard.on_press(lambda event: client.send_message("/keyboard", (user, 1, event.scan_code)))
-keyboard.on_release(lambda event: client.send_message("/keyboard", (user, 0, event.scan_code)))
+def handle_keyboard_event(event):
+    v = 0 if event.event_type == keyboard.KEY_UP else 1 if event.event_type == keyboard.KEY_DOWN else None
+    client.send_message("/keyboard", (user, event.scan_code, v))
 
 lx, ly = mouse.get_position()
 def handle_mouse_event(event):
@@ -29,6 +30,7 @@ def handle_mouse_event(event):
     lx = x
     ly = y
 
+keyboard.hook(handle_keyboard_event)
 mouse.hook(handle_mouse_event)
 
 keyboard.wait()
