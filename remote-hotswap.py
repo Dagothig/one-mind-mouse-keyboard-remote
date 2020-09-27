@@ -10,37 +10,44 @@ import struct
 from enum import Enum
 from threading import Thread
 
+clients = {}
+
 # FIXME: keyboard doesn't understand scan codes unless we use keys at some point...
 keyboard.key_to_scan_codes('b')
-keyboard.on_press(lambda x: print(x.scan_code))
 
-def on_key_press(address, key):
-    keyboard.press(key)
+def handle_connect(address, user):
+    if user in clients:
+        return
+    clients[user] = {}
 
-def on_key_release(address, key):
-    keyboard.release(key)
+def handle_keyboard_event(address, user, c, v):
+    handle_connect(address, user)
+    if v == 1:
+        keyboard.press(c)
+    elif v == 0:
+        keyboard.release(c)
+    #elif v == 2:
+    #    keyboard.send(c)
 
-def on_move(address, x, y):
-    mouse.move(x, y)
-
-def on_button(address, ev):
-    event_type, button = ev
-    if event_type ==  mouse.UP:
-        mouse.release(button)
-    elif event.type ==  mouse.DOWN:
-        mouse.press(button)
-    elif event.type ==  mouse.DOUBLE:
-        mouse.double_click(button)
-
-def on_wheel(address, delta):
-    mouse.wheel(delta)
+def handle_mouse_event(address, user, v, x, y):
+    handle_connect(address, user)
+    left = v & 1
+    if left and not mouse.is_pressed('left'):
+        mouse.press('left')
+    if not left and mouse.is_pressed('left'):
+        mouse.release('left')
+    
+    right = (v >> 1) & 1
+    if right and not mouse.is_pressed('right'):
+        mouse.press('right')
+    if not right and mouse.is_pressed('right'):
+        mouse.release('right')
+    mouse.move(x, y, False)
 
 dispatcher = Dispatcher()
-dispatcher.map("/mouse/move", on_move)
-dispatcher.map("/mouse/button", on_button)
-dispatcher.map("/mouse/wheel", on_wheel)
-dispatcher.map("/keyboard/press", on_key_press)
-dispatcher.map("/keyboard/release", on_key_release)
+dispatcher.map('/connect', handle_connect)
+dispatcher.map("/keyboard", handle_keyboard_event)
+dispatcher.map("/mouse", handle_mouse_event)
 
 with BlockingOSCUDPServer(('', 8000), dispatcher) as server:
     server.serve_forever()
